@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+    <main class="container mx-auto px-4 py-6">
+        <nav class="mb-6">
+            <ol class="flex items-center space-x-2 text-sm">
+                <li><a href="{% url 'home' %}" class="text-gray-600 dark:text-gray-400 hover:text-blue-600 transition-colors">Accueil</a></li>
+                <li><i class="fas fa-chevron-right text-gray-400 text-xs"></i></li>
+                <li><span class="text-blue-600 dark:text-blue-400 font-medium">Boutique</span></li>
+            </ol>
+            <h1 class="text-3xl font-bold text-gray-800 dark:text-white mt-2">Notre Catalogue</h1>
+            <p class="text-gray-600 dark:text-gray-300 mt-1">
+                {% if products.count %}{{ products.count }}{% else %}0{% endif %} produits trouvés
+            </p>
+        </nav>
+
+        <div class="lg:hidden mb-6">
+            <button id="open-filters" class="flex items-center justify-center w-full py-3 bg-blue-600 text-white rounded-xl font-medium shadow-lg active:scale-95 transition-all">
+                <i class="fas fa-filter mr-2"></i> Filtres & Catégories
+            </button>
+        </div>
+
+        <div class="flex flex-col lg:flex-row gap-8">
+            <aside class="lg:w-1/4">
+                <div id="filter-sidebar" class="fixed inset-y-0 left-0 z-50 w-80 bg-white dark:bg-gray-800 shadow-xl overflow-y-auto transform -translate-x-full transition-transform duration-300 lg:relative lg:translate-x-0 lg:w-full lg:shadow-none lg:bg-transparent lg:z-0 lg:overflow-visible">
+                    <div class="p-6 lg:p-0 space-y-8">
+                        <div class="flex items-center justify-between mb-6 lg:hidden">
+                            <h2 class="text-xl font-bold dark:text-white">Filtres</h2>
+                            <button id="close-filters" class="p-2 text-gray-500 hover:text-red-500">
+                                <i class="fas fa-times text-xl"></i>
+                            </button>
+                        </div>
+                        
+                        <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-md border border-gray-100 dark:border-gray-700">
+                            <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-4 flex items-center">
+                                <i class="fas fa-list mr-2 text-blue-600"></i> Catégories
+                            </h3>
+                            <ul class="space-y-3">
+                                <li>
+                                    <a href="{% url 'product_list' %}" class="flex justify-between items-center text-gray-700 dark:text-gray-300 hover:text-blue-600 transition-colors {% if not request.GET.category %}font-bold text-blue-600{% endif %}">
+                                        <span>Toutes</span>
+                                    </a>
+                                </li>
+                                {% for cat in categories %}
+                                <li>
+                                    <a href="{% url 'product_list' %}?category={{ cat.slug }}" class="flex justify-between items-center text-gray-700 dark:text-gray-300 hover:text-blue-600 transition-colors {% if request.GET.category == cat.slug %}font-bold text-blue-600{% endif %}">
+                                        <span>{{ cat.name }}</span>
+                                        <span class="bg-gray-100 dark:bg-gray-700 text-xs px-2 py-1 rounded-full">{{ cat.products.count }}</span>
+                                    </a>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+
+                        <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-md border border-gray-100 dark:border-gray-700">
+                            <h3 class="text-lg font-bold dark:text-white mb-4"><i class="fas fa-tag mr-2 text-blue-600"></i> Budget (FCFA)</h3>
+                            <form method="GET" action="{% url 'product_list' %}" class="space-y-4">
+                                {% if request.GET.category %}<input type="hidden" name="category" value="{{ request.GET.category }}">{% endif %}
+                                <div class="flex gap-2">
+                                    <input type="number" name="min_price" placeholder="Min" value="{{ request.GET.min_price }}" class="w-1/2 p-2 rounded-lg border dark:bg-gray-700 dark:border-gray-600 dark:text-white text-sm">
+                                    <input type="number" name="max_price" placeholder="Max" value="{{ request.GET.max_price }}" class="w-1/2 p-2 rounded-lg border dark:bg-gray-700 dark:border-gray-600 dark:text-white text-sm">
+                                </div>
+                                <button type="submit" class="w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-bold">
+                                    Filtrer
+                                </button>
+                            </form>
+                        </div>
+
+                        <a href="{% url 'product_list' %}" class="block text-center w-full py-3 border-2 border-dashed border-gray-300 dark:border-gray-600 text-gray-500 rounded-xl hover:bg-gray-50 transition-colors">
+                            Réinitialiser tout
+                        </a>
+                    </div>
+                </div>
+                <div id="filter-overlay" class="fixed inset-0 bg-black/50 z-40 hidden lg:hidden"></div>
+            </aside>
+
+            <section class="lg:w-3/4">
+                <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 mb-6 shadow-md flex flex-col md:flex-row justify-between items-center gap-4 border border-gray-100 dark:border-gray-700">
+                    <div class="text-gray-600 dark:text-gray-300 text-sm">
+                        Affichage de <b>{{ page_obj.start_index }}-{{ page_obj.end_index }}</b> sur {{ paginator.count }}
+                    </div>
+                    
+                    <div class="flex items-center gap-3">
+                        <label class="text-sm dark:text-gray-400">Trier:</label>
+                        <select onchange="location = this.value;" class="bg-gray-50 dark:bg-gray-700 border-none rounded-lg text-sm p-2 focus:ring-2 focus:ring-blue-500">
+                            <option value="?sort=newest">Nouveautés</option>
+                            <option value="?sort=price_asc">Prix croissant</option>
+                            <option value="?sort=price_desc">Prix décroissant</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-6">
+                    {% for product in products %}
+                        {% include "includes/product_card.html" %}
+                    {% empty %}
+                        <div class="col-span-full text-center py-20">
+                            <i class="fas fa-search text-5xl text-gray-300 mb-4"></i>
+                            <p class="text-gray-500">Aucun produit ne correspond à votre recherche.</p>
+                        </div>
+                    {% endfor %}
+                </div>
+
+                {% if is_paginated %}
+                <div class="mt-12 flex justify-center">
+                    <nav class="flex items-center space-x-2">
+                        {% if page_obj.has_previous %}
+                            <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}" class="p-2 w-10 h-10 flex items-center justify-center rounded-lg border dark:border-gray-700 dark:text-white hover:bg-blue-600 hover:text-white transition-all">
+                                <i class="fas fa-chevron-left"></i>
+                            </a>
+                        {% endif %}
+
+                        <span class="font-bold dark:text-white">Page {{ page_obj.number }} sur {{ paginator.num_pages }}</span>
+
+                        {% if page_obj.has_next %}
+                            <a href="?page={{ page_obj.next_page_number }}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}" class="p-2 w-10 h-10 flex items-center justify-center rounded-lg border dark:border-gray-700 dark:text-white hover:bg-blue-600 hover:text-white transition-all">
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                        {% endif %}
+                    </nav>
+                </div>
+                {% endif %}
+            </section>
+        </div>
+    </main>
+
+    <script>
+        const openBtn = document.getElementById('open-filters');
+        const closeBtn = document.getElementById('close-filters');
+        const sidebar = document.getElementById('filter-sidebar');
+        const overlay = document.getElementById('filter-overlay');
+
+        function toggleFilters() {
+            sidebar.classList.toggle('-translate-x-full');
+            overlay.classList.toggle('hidden');
+            document.body.classList.toggle('overflow-hidden');
+        }
+
+        openBtn.addEventListener('click', toggleFilters);
+        closeBtn.addEventListener('click', toggleFilters);
+        overlay.addEventListener('click', toggleFilters);
+    </script>
+{% endblock %}

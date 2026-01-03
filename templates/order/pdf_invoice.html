@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        @page { size: A4; margin: 2cm; }
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            color: #333;
+            line-height: 1.6;
+            margin: 0;
+        }
+        .header-table { width: 100%; border-bottom: 3px solid #2563eb; padding-bottom: 20px; margin-bottom: 30px; }
+        .logo { font-size: 28px; font-weight: bold; color: #2563eb; text-transform: uppercase; letter-spacing: 2px; }
+        
+        .info-section { width: 100%; margin-bottom: 40px; }
+        .info-box { vertical-align: top; width: 50%; }
+        .label { color: #6b7280; font-size: 12px; text-transform: uppercase; font-weight: bold; }
+        .value { font-size: 14px; margin-bottom: 10px; }
+
+        table.items-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        table.items-table th { 
+            background-color: #f3f4f6; 
+            color: #374151; 
+            padding: 12px; 
+            text-align: left; 
+            font-size: 13px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        table.items-table td { padding: 12px; border-bottom: 1px solid #f3f4f6; font-size: 14px; }
+
+        .totals-section { margin-top: 30px; width: 100%; }
+        .total-row { text-align: right; }
+        .total-label { font-size: 16px; font-weight: bold; color: #374151; }
+        .total-amount { font-size: 20px; font-weight: bold; color: #2563eb; padding-left: 20px; }
+
+        .footer { 
+            position: absolute; bottom: 0; width: 100%; 
+            text-align: center; color: #9ca3af; font-size: 11px; 
+            border-top: 1px solid #e5e7eb; padding-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <table class="header-table">
+        <tr>
+            <td class="logo">NexusShop</td>
+            <td style="text-align: right;">
+                <h2 style="margin: 0; color: #111827;">FACTURE</h2>
+                <p style="margin: 0; color: #6b7280;">{{ order.reference }}</p>
+            </td>
+        </tr>
+    </table>
+
+    <table class="info-section">
+        <tr>
+            <td class="info-box">
+                <div class="label">Facturé à :</div>
+                <div class="value">
+                    <strong>{{ order.full_name }}</strong><br>
+                    {{ order.address }}<br>
+                    {{ order.city }}, Gabon<br>
+                    Tél : {{ order.phone }}
+                </div>
+            </td>
+            <td class="info-box" style="text-align: right;">
+                <div class="label">Date d'émission :</div>
+                <div class="value">{{ order.created_at|date:"d F Y" }}</div>
+                <div class="label">Statut du paiement :</div>
+                <div class="value" style="color: #059669; font-weight: bold;">
+                    {% if order.is_paid %}PAYÉE{% else %}EN ATTENTE{% endif %}
+                </div>
+            </td>
+        </tr>
+    </table>
+
+    <table class="items-table">
+        <thead>
+            <tr>
+                <th>Description</th>
+                <th style="text-align: center;">Quantité</th>
+                <th style="text-align: right;">Prix Unitaire</th>
+                <th style="text-align: right;">Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in order.items.all %}
+            <tr>
+                <td>
+                    <strong>{{ item.product.nom }}</strong>
+                    {% if item.color or item.size %}<br>
+                    <span style="font-size: 11px; color: #6b7280;">
+                        {% if item.color %}Couleur: {{ item.color }}{% endif %} 
+                        {% if item.size %} Taille: {{ item.size }}{% endif %}
+                    </span>
+                    {% endif %}
+                </td>
+                <td style="text-align: center;">{{ item.quantity }}</td>
+                <td style="text-align: right;">{{ item.price }} FCFA</td>
+                <td style="text-align: right;">{{ item.total_price }} FCFA</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <table class="totals-section">
+        <tr class="total-row">
+            <td style="width: 60%;"></td>
+            <td>
+                <span class="total-label">MONTANT TOTAL</span>
+                <span class="total-amount">{{ order.total_amount }} FCFA</span>
+            </td>
+        </tr>
+    </table>
+
+    <div class="footer">
+        NexusShop - Votre boutique en ligne de confiance à Libreville.<br>
+        Merci pour votre achat ! Pour toute question, contactez-nous au {{ settings.CONTACT_PHONE }}.
+    </div>
+
+</body>
+</html>

@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Facture_{{ order.reference }}</title>
+    <style>
+        /* Styles de base */
+        body { font-family: 'Segoe UI', Arial, sans-serif; color: #333; line-height: 1.5; padding: 40px; background-color: #f4f4f4; margin: 0; }
+        .invoice-box { max-width: 800px; margin: auto; padding: 30px; border: 1px solid #eee; box-shadow: 0 0 10px rgba(0, 0, 0, 0.15); background: #fff; border-radius: 8px; }
+        
+        /* LOGO CUSTOM (Remplacement Tailwind) */
+        .logo-container { display: flex; align-items: center; margin-bottom: 20px; }
+        .logo-circle { 
+            width: 40px; height: 40px; border-radius: 50%; 
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            display: flex; align-items: center; justify-content: center;
+            margin-right: 12px;
+        }
+        .logo-text { font-size: 24px; font-weight: bold; color: #1a202c; }
+        .logo-accent { color: #60a5fa; }
+        .logo-letter { color: white; font-weight: bold; font-size: 20px; }
+
+        .header { display: flex; justify-content: space-between; border-bottom: 2px solid #2a5298; padding-bottom: 20px; margin-bottom: 30px; }
+        
+        .info-section { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-bottom: 30px; }
+        .info-title { font-weight: bold; text-transform: uppercase; font-size: 12px; color: #888; margin-bottom: 5px; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th { background-color: #f8f9fa; border-bottom: 2px solid #eee; padding: 12px; text-align: left; font-size: 14px; }
+        td { padding: 12px; border-bottom: 1px solid #eee; font-size: 14px; }
+        
+        .totals { margin-top: 30px; text-align: right; }
+        .total-row { display: flex; justify-content: flex-end; margin-bottom: 8px; }
+        .total-label { width: 160px; font-weight: bold; }
+        .total-amount { width: 130px; }
+        .grand-total { font-size: 18px; color: #2a5298; border-top: 2px solid #eee; padding-top: 10px; margin-top: 10px; font-weight: 800; }
+
+        .controls { max-width: 800px; margin: 0 auto 20px auto; display: flex; gap: 10px; }
+        .btn { padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; text-decoration: none; font-size: 14px; }
+        .btn-print { background-color: #2a5298; color: white; }
+        .btn-back { background-color: #e2e8f0; color: #475569; }
+
+        @media print {
+            body { background: none; padding: 0; }
+            .invoice-box { box-shadow: none; border: none; max-width: 100%; width: 100%; padding: 0; }
+            .controls { display: none; }
+            .logo-circle { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            @page { margin: 1.5cm; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="controls">
+        <button onclick="window.print()" class="btn btn-print">🖨️ Imprimer la facture</button>
+        <button onclick="window.history.back()" class="btn btn-back">Retour</button>
+    </div>
+
+    <div class="invoice-box">
+        <div class="header">
+            <div>
+                <div class="logo-container">
+                    <div class="logo-circle">
+                        <span class="logo-letter">N</span>
+                    </div>
+                    <span class="logo-text">Nexus<span class="logo-accent">Shop</span></span>
+                </div>
+                <p style="margin-top: 0;">
+                    Libreville, Gabon<br>
+                    <strong>Tél:</strong> +241 066 14 23 44<br>
+                    <strong>Email:</strong> contact@nexusshop.com
+                </p>
+            </div>
+            <div style="text-align: right;">
+                <h2 style="margin: 0; color: #2a5298; font-size: 28px;">FACTURE</h2>
+                <p style="margin-top: 10px;">
+                    Référence : <strong>{{ order.reference }}</strong><br>
+                    Date : {{ order.created_at|date:"d/m/Y H:i" }}
+                </p>
+            </div>
+        </div>
+
+        <div class="info-section">
+            <div>
+                <div class="info-title">Facturé à</div>
+                <strong style="font-size: 16px;">{{ order.full_name }}</strong><br>
+                {{ order.address }}<br>
+                {{ order.city }}, Gabon<br>
+                <strong>Tél :</strong> {{ order.phone }}
+            </div>
+            <div>
+                <div class="info-title">Détails Paiement</div>
+                <p>
+                    Statut : {% if order.is_paid %}<strong>✅ Payée</strong>{% else %}<strong style="color: #e53e3e;">❌ En attente</strong>{% endif %}<br>
+                    Méthode : {{ order.get_status_display }}
+                </p>
+            </div>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Description</th>
+                    <th>Variante</th>
+                    <th style="text-align: center;">Prix Unit.</th>
+                    <th style="text-align: center;">Qté</th>
+                    <th style="text-align: right;">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in order.items.all %}
+                <tr>
+                    <td><strong>{{ item.product.nom }}</strong></td>
+                    <td style="color: #666; font-size: 0.85em;">
+                        {% if item.color %}{{ item.color }}{% endif %}
+                        {% if item.size %}{% if item.color %} | {% endif %}{{ item.size }}{% endif %}
+                        {% if item.capacity %}{% if item.size or item.color %} | {% endif %}{{ item.capacity }}{% endif %}
+                    </td>
+                    <td style="text-align: center;">{{ item.price|floatformat:0 }}</td>
+                    <td style="text-align: center;">{{ item.quantity }}</td>
+                    <td style="text-align: right; font-weight: bold;">{{ item.total_price|floatformat:0 }} FCFA</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" style="text-align: center;">Aucun article dans cette commande.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="totals">
+            <div class="total-row">
+                <div class="total-label">Sous-total :</div>
+                <div class="total-amount">{{ order.total_amount|floatformat:0 }} FCFA</div>
+            </div>
+            <div class="total-row">
+                <div class="total-label">Frais de livraison :</div>
+                <div class="total-amount">{{ order.shipping_cost|floatformat:0 }} FCFA</div>
+            </div>
+            <div class="total-row grand-total">
+                <div class="total-label">TOTAL À PAYER :</div>
+                <div class="total-amount">{{ order.total_amount|floatformat:0 }} FCFA</div>
+            </div>
+        </div>
+
+        <div style="margin-top: 60px; border-top: 1px solid #eee; padding-top: 20px; font-size: 11px; color: #999; text-align: center;">
+            <p>
+                NexusShop - RCCM: GN.LBV.2024.B.XXXX - NIF: XXXXXX<br>
+                Merci pour votre confiance ! Les marchandises restent la propriété de NexusShop jusqu'au paiement intégral.<br>
+                <em>Document généré numériquement le {{ "now"|date:"d/m/Y" }}</em>
+            </p>
+        </div>
+    </div>
+
+</body>
+</html>

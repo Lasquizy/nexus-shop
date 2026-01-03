@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+
+{% block title %}Finaliser la commande - {{ site_name }}{% endblock %}
+
+{% block content %}
+<main class="container mx-auto px-4 py-8">
+    <div class="flex flex-col lg:flex-row gap-8">
+        <div class="lg:w-3/5">
+            <h1 class="text-2xl font-bold text-gray-800 dark:text-white mb-6">Finaliser votre commande</h1>
+            
+            {% if error %}
+            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+                <strong>Erreur :</strong> {{ error }}
+            </div>
+            {% endif %}
+            
+            <form action="{% url 'checkout_view' %}" method="POST">
+                {% csrf_token %}
+                
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-6 border border-gray-200 dark:border-gray-700">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-lg font-bold text-gray-800 dark:text-white flex items-center">
+                            <span class="bg-blue-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs mr-2">1</span>
+                            Adresse de livraison
+                        </h2>
+                        <span class="text-sm text-gray-500 dark:text-gray-400">Étape 1 sur 2</span>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Nom complet *</label>
+                        <input type="text" name="full_name" required class="w-full px-4 py-3 rounded-lg border ...">
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email *</label>
+                        <input type="email" name="email" required class="w-full px-4 py-3 rounded-lg border ...">
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Adresse précise (Rue, Immeuble) *</label>
+                        <input type="text" name="address" required class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Ville *</label>
+                            <input type="text" name="city" required class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Quartier / Zone *</label>
+                            <input type="text" name="neighborhood" required class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Téléphone *</label>
+                        <div class="relative">
+                            <input type="tel" name="phone" required class="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 outline-none transition-all" placeholder="Ex: 077 00 00 00">
+                            <i class="fas fa-phone absolute left-3 top-3.5 text-gray-400"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-6 border border-gray-200 dark:border-gray-700">
+                    <h2 class="text-lg font-bold text-gray-800 dark:text-white mb-4 flex items-center">
+                        <span class="bg-blue-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs mr-2">2</span>
+                        Méthode de paiement
+                    </h2>
+                    
+                    <div class="space-y-3">
+                        <label class="payment-method border rounded-lg p-4 cursor-pointer flex items-center justify-between hover:border-blue-500 transition-all">
+                            <div class="flex items-center">
+                                <input type="radio" name="payment_method" value="mobile_money" checked class="mr-4">
+                                <div>
+                                    <span class="font-bold block text-gray-800 dark:text-white">Mobile Money</span>
+                                    <span class="text-xs text-gray-500">Airtel Money, Moov Money</span>
+                                </div>
+                            </div>
+                            <i class="fas fa-mobile-alt text-2xl text-blue-600"></i>
+                        </label>
+
+                        <label class="payment-method border rounded-lg p-4 cursor-pointer flex items-center justify-between hover:border-blue-500 transition-all">
+                            <div class="flex items-center">
+                                <input type="radio" name="payment_method" value="cod" class="mr-4">
+                                <div>
+                                    <span class="font-bold block text-gray-800 dark:text-white">Paiement à la livraison</span>
+                                    <span class="text-xs text-gray-500">Payez en espèces dès réception</span>
+                                </div>
+                            </div>
+                            <i class="fas fa-money-bill-wave text-2xl text-green-600"></i>
+                        </label>
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-6 rounded-lg flex items-center justify-center text-lg transition-colors">
+                    <i class="fas fa-lock mr-3"></i>
+                    Confirmer la commande ({{ cart.total_final }} FCFA)
+                </button>
+            </form>
+        </div>
+        
+        <div class="lg:w-2/5">
+            <div class="sticky top-6">
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-200 dark:border-gray-700">
+                    <h2 class="text-lg font-bold text-gray-800 dark:text-white mb-6">Résumé ({{ cart.items_count }} articles)</h2>
+                    
+                    <div class="space-y-4 mb-6 max-h-80 overflow-y-auto pr-2">
+                        {% for item in cart.items.all %}
+                        <div class="flex items-center justify-between border-b border-gray-100 dark:border-gray-700 pb-4 last:border-0">
+                            <div class="flex items-center">
+                                <div class="w-12 h-12 rounded bg-gray-100 overflow-hidden flex-shrink-0">
+                                    {% if item.product.image %}
+                                        <img src="{{ item.product.image.url }}" class="w-full h-full object-cover">
+                                    {% endif %}
+                                </div>
+                                <div class="ml-3">
+                                    <h3 class="text-sm font-medium text-gray-800 dark:text-white line-clamp-1">{{ item.product.nom }}</h3>
+                                    <p class="text-xs text-gray-500">Qté: {{ item.quantity }}</p>
+                                </div>
+                            </div>
+                            <span class="text-sm font-bold text-gray-800 dark:text-white">{{ item.total_item_price }} FCFA</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="space-y-3 border-t border-gray-100 dark:border-gray-700 pt-4">
+                        <div class="flex justify-between">
+                            <span class="text-gray-600 dark:text-gray-400">Sous-total</span>
+                            <span class="font-medium text-gray-800 dark:text-white">{{ cart.total_price }} FCFA</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600 dark:text-gray-400">Livraison</span>
+                            <span class="font-medium {% if cart.shipping_cost == 0 %}text-green-500{% else %}text-gray-800 dark:text-white{% endif %}">
+                                {% if cart.shipping_cost == 0 %}Gratuite{% else %}{{ cart.shipping_cost }} FCFA{% endif %}
+                            </span>
+                        </div>
+                        <div class="flex justify-between pt-3 border-t border-gray-200 dark:border-gray-600">
+                            <span class="text-lg font-bold text-gray-900 dark:text-white">Total à payer</span>
+                            <span class="text-2xl font-black text-blue-600">{{ cart.total_final }} FCFA</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+{% endblock %}

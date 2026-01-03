@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+    <section class="py-10 md:py-16 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-900 rounded-3xl overflow-hidden mb-12">
+        <div class="container mx-auto px-4">
+            <div class="flex flex-col lg:flex-row items-center justify-between">
+                <div class="lg:w-1/2 mb-10 lg:mb-0">
+                    <h1 class="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4">
+                        Découvrez l'innovation <span class="text-blue-600 dark:text-blue-400">High-Tech</span> au Gabon
+                    </h1>
+                    <p class="text-lg text-gray-600 dark:text-gray-300 mb-8">
+                        Explorez notre sélection exclusive de produits technologiques et accessoires design. 
+                        Livraison rapide sur Libreville, Akanda et Owendo.
+                    </p>
+                    <a href="{% url 'product_list' %}" class="inline-block bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium py-3 px-8 rounded-full shadow-lg hover:shadow-xl transition-all hover:-translate-y-1">
+                        Voir la collection <i class="fas fa-arrow-right ml-2"></i>
+                    </a>
+                </div>
+                <div class="lg:w-1/2 flex justify-center">
+                    <div class="relative">
+                        <div class="w-72 h-72 md:w-96 md:h-96 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 opacity-20 absolute -top-4 -left-4 animate-pulse"></div>
+                        <img src="https://images.unsplash.com/photo-1498049794561-7780e7231661?auto=format&fit=crop&w=1170&q=80" 
+                             alt="NexusShop Gabon" 
+                             class="relative rounded-2xl shadow-2xl w-full max-w-md object-cover h-80">
+                        <div class="absolute -bottom-4 -right-4 bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-bold py-2 px-6 rounded-full shadow-lg">
+                            Offres Spéciales Noël 🎄
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="py-12">
+        <div class="container mx-auto px-4">
+            <h2 class="text-3xl font-bold text-center text-gray-800 dark:text-white mb-2">Nos Catégories</h2>
+            <p class="text-gray-600 dark:text-gray-300 text-center mb-10">Parcourez notre univers par thématique</p>
+            
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                {% for cat in categories|slice:":4" %}
+                <a href="{% url 'product_list' %}?category={{ cat.slug }}" class="group">
+                    <div class="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all border border-gray-200 dark:border-gray-700">
+                        <div class="h-40 overflow-hidden bg-gray-100">
+                            {% if cat.image %}
+                                <img src="{{ cat.image.url }}" 
+                                    alt="{{ cat.name }}" 
+                                    class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
+                            {% else %}
+                                <div class="w-full h-full flex items-center justify-center bg-gray-200 text-gray-400">
+                                    <i class="fas fa-tags text-3xl"></i>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="p-4 text-center">
+                            <h3 class="font-bold text-gray-800 dark:text-white">{{ cat.name }}</h3>
+                        </div>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+
+    <section class="py-12 bg-gray-50 dark:bg-gray-800/50 rounded-3xl overflow-hidden">
+        <div class="container mx-auto px-4">
+            <h2 class="text-3xl font-bold text-center text-gray-800 dark:text-white mb-2">Produits Vedettes</h2>
+            
+            <div class="flex justify-center my-10">
+                <div class="inline-flex flex-wrap justify-center rounded-xl md:rounded-full bg-white dark:bg-gray-800 p-1 shadow-md">
+                    <button class="tab-btn active py-2 px-6 rounded-full font-medium transition-all" data-filter="all">Tous</button>
+                    {% for cat in categories|slice:":3" %}
+                        <button class="tab-btn py-2 px-6 rounded-full font-medium transition-all" data-filter="{{ cat.slug }}">{{ cat.name }}</button>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8" id="products-grid">
+                {% for product in products %}
+                    {% include "includes/product_card.html" %}
+                {% empty %}
+                <div class="col-span-full text-center py-20">
+                    <i class="fas fa-search text-5xl text-gray-300 mb-4"></i>
+                    <p class="text-gray-500">Aucun produit ne correspond à votre recherche.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+
+    <style>
+        .tab-btn.active {
+            background-color: #2563eb;
+            color: white;
+            box-shadow: 0 4px 14px 0 rgba(37, 99, 235, 0.39);
+        }
+        .product-item.hidden {
+            display: none;
+        }
+    </style>
+
+    <script>
+        document.querySelectorAll('.tab-btn').forEach(button => {
+            button.addEventListener('click', () => {
+                // Style des boutons
+                document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+
+                // Filtrage
+                const filter = button.getAttribute('data-filter');
+                const products = document.querySelectorAll('.product-item');
+
+                products.forEach(item => {
+                    if (filter === 'all' || item.getAttribute('data-category') === filter) {
+                        item.classList.remove('hidden');
+                    } else {
+                        item.classList.add('hidden');
+                    }
+                });
+            });
+        });
+    </script>
+{% endblock %}

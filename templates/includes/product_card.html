@@ -1,0 +1,61 @@
+<div class="product-card bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-md card-hover border border-gray-200 dark:border-gray-700 flex flex-col h-full">
+    <div class="relative overflow-hidden shrink-0">
+        {% with product.images.all|first as main_image %}
+            <a href="{% url 'product_detail' product.slug %}">
+                <img src="{% if main_image %}{{ main_image.image.url }}{% else %}https://via.placeholder.com/400x300?text=Pas+d'image{% endif %}"
+                 alt="{{ product.nom }}"
+                 class="w-full h-48 md:h-56 lg:h-64 object-cover transition-transform duration-500 group-hover:scale-110">
+            </a>
+        {% endwith %}
+
+        {% if product.prix_promotionnel %}
+        <div class="absolute top-4 left-4 z-10">
+            <span class="bg-red-500 text-white text-xs font-bold py-1 px-3 rounded-full shadow-lg">PROMO</span>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="p-4 md:p-6 flex flex-col flex-grow">
+        <div class="flex justify-between items-center mb-2">
+            <span class="text-[10px] font-bold text-orange-500 uppercase tracking-widest">{{ product.categorie.name }}</span>
+            <span class="text-xs text-gray-400 font-medium">{{ product.marque }}</span>
+        </div>
+
+        <h3 class="text-base md:text-lg font-bold text-gray-900 dark:text-white mb-2 line-clamp-2 h-12 md:h-14 overflow-hidden">
+            <a href="{% url 'product_detail' product.slug %}" class="hover:text-blue-600 transition-colors">
+                {{ product.nom }}
+            </a>
+        </h3>
+
+        <div class="flex-grow"></div>
+
+        <div class="flex items-center justify-between mt-4">
+            <div class="flex flex-col">
+                {% if product.prix_promotionnel %}
+                    <span class="text-[10px] text-gray-400 line-through">{{ product.prix }} FCFA</span>
+                    <span class="text-lg font-black text-red-600 dark:text-red-400">{{ product.prix_promotionnel }} FCFA</span>
+                {% else %}
+                    <span class="text-lg font-black text-gray-900 dark:text-white">{{ product.prix }} FCFA</span>
+                {% endif %}
+            </div>
+
+            {% if product.quantite_stocks > 0 %}
+            <form action="{% url 'add_to_cart' product.id %}" method="POST" class="quick-add-form">
+                {% csrf_token %}
+                <input type="hidden" name="quantity" value="1">
+                <button type="submit" 
+                        class="p-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-md transition-all active:scale-95 group">
+                    <i class="fas fa-plus group-hover:rotate-90 transition-transform duration-300"></i>
+                </button>
+            </form>
+            {% endif %}
+        </div>
+        
+        <div class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700 flex justify-between items-center text-[10px] uppercase font-semibold">
+            <span class="{% if product.quantite_stocks > 0 %}text-green-500{% else %}text-red-500{% endif %}">
+                {% if product.quantite_stocks > 0 %}● En Stock{% else %}○ Rupture{% endif %}
+            </span>
+            <span class="text-gray-400">Libreville</span>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Mon Panier - Shop{% endblock %}
+
+{% block content %}
+
+<main class="py-8 md:py-12 bg-gray-50 dark:bg-gray-900/50 min-h-screen">
+    <div class="container mx-auto px-4">
+        <div class="mb-8">
+            <div class="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-2">
+                <a href="{% url 'home' %}" class="hover:text-blue-600 transition-colors">Accueil</a>
+                <i class="fas fa-chevron-right mx-2"></i>
+                <span class="text-blue-600 dark:text-blue-400">Panier</span>
+            </div>
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-800 dark:text-white">Mon Panier</h1>
+            <p class="text-gray-600 dark:text-gray-300 mt-2">
+                {% if cart_items %} Vous avez {{ cart_items.count }} article(s) dans votre panier {% else %} Votre panier est actuellement vide {% endif %}
+            </p>
+        </div>
+
+        {% if cart_items %}
+        <div id="cart-with-items" class="lg:grid lg:grid-cols-3 lg:gap-8">
+            <div class="lg:col-span-2">
+                <div class="hidden md:grid md:grid-cols-12 gap-4 mb-4 px-4 text-sm font-bold uppercase tracking-wider text-gray-500">
+                    <div class="col-span-6">Produit</div>
+                    <div class="col-span-2 text-center">Prix</div>
+                    <div class="col-span-2 text-center">Quantité</div>
+                    <div class="col-span-2 text-right">Total</div>
+                </div>
+
+                <div id="cart-items-container">
+                    {% for item in cart_items %}
+                    {% with product=item.product %}
+                    <div class="cart-item bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 mb-4 overflow-hidden transition-all hover:shadow-md">
+                        <div class="p-4 md:p-6">
+                            <div class="flex flex-col md:grid md:grid-cols-12 md:items-center gap-4">
+                                <div class="flex items-center col-span-6">
+                                    <div class="relative flex-shrink-0">
+                                        {% with product.images.first as first_image %}
+                                            {% if first_image %}
+                                                <img src="{{ first_image.image.url }}" alt="{{ product.nom }}" class="w-20 h-20 md:w-24 md:h-24 object-cover rounded-xl">
+                                            {% else %}
+                                                <div class="w-20 h-20 bg-gray-200 rounded-xl flex items-center justify-center text-xs text-gray-500">Pas d'image</div>
+                                            {% endif %}
+                                        {% endwith %}
+
+                                        {# 2. Badge PROMO basé sur votre propriété est_en_promo #}
+                                        {% if product.est_en_promo %}
+                                            <span class="absolute -top-2 -left-2 bg-red-500 text-white text-[10px] font-bold py-1 px-2 rounded-lg">PROMO</span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="ml-4">
+                                        <h3 class="font-bold text-gray-800 dark:text-white hover:text-blue-600 transition-colors">
+                                            <a href="{{ product.get_absolute_url }}">{{ product.nom }}</a>
+                                        </h3>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ product.categorie.name }}</p>
+                                        
+                                        <a href="{% url 'cart_remove' item.id %}" class="md:hidden mt-2 text-red-500 text-sm font-medium inline-block">
+                                            <i class="fas fa-trash-alt mr-1"></i> Supprimer
+                                        </a>
+                                    </div>
+                                </div>
+
+                                <div class="hidden md:block col-span-2 text-center">
+                                    <span class="text-gray-800 dark:text-white font-semibold">{{ product.prix }} FCFA</span>
+                                    <div class="text-sm text-gray-500 dark:text-gray-400 line-through">{{ product.prix_promotionnel }} FCFA</div>
+                                </div>
+
+                                <div class="col-span-2 flex justify-center">
+                                    <div class="flex items-center border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-900/50">
+                                        <a href="{% url 'cart_update_quantity' item.id %}?action=decrease" 
+                                           class="w-8 h-8 flex items-center justify-center text-gray-500 hover:text-red-600 transition-colors">
+                                            <i class="fas fa-minus text-xs"></i>
+                                        </a>
+                                        
+                                        <span class="w-8 text-center font-bold text-gray-800 dark:text-white">{{ item.quantity }}</span>
+                                        
+                                        <a href="{% url 'cart_update_quantity' item.id %}?action=increase" 
+                                           class="w-8 h-8 flex items-center justify-center text-gray-500 hover:text-blue-600 transition-colors">
+                                            <i class="fas fa-plus text-xs"></i>
+                                        </a>
+                                    </div>
+                                </div>
+
+                                <div class="col-span-2 text-right flex flex-col items-end">
+                                    <div class="text-lg font-bold text-blue-600 dark:text-blue-400">
+                                        <span>
+                                            {{ item.total_item_price }} FCFA
+                                            
+                                        </span>
+                                    </div>
+                                    <a href="{% url 'cart_remove' item.id %}" 
+                                       class="hidden md:block mt-1 text-red-600 hover:text-red-500 transition-colors text-sm"
+                                       title="Supprimer l'article">
+                                        <i class="fas fa-trash-alt"></i> Supprimer
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endwith %}
+                    {% endfor %}
+                </div>
+
+                <div class="mt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
+                    <a href="{% url 'product_list' %}" class="flex items-center text-blue-600 font-semibold hover:text-blue-800 transition-colors">
+                        <i class="fas fa-arrow-left mr-2"></i> Continuer mes achats
+                    </a>
+                    {% if cart_clear %} <form action="{% url 'cart_clear' %}" method="post">
+                        {% csrf_token %}
+                        <button type="submit" class="px-6 py-3 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-red-500 transition-colors uppercase tracking-widest">
+                            <i class="fas fa-trash-alt mr-2"></i> Vider le panier
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="mt-8 lg:mt-0">
+                <div class="sticky top-24 bg-white dark:bg-gray-800 rounded-3xl shadow-xl border border-gray-100 dark:border-gray-700 p-8">
+                    <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-6">Résumé</h2>
+                    <div class="space-y-4 mb-8">
+                        <div class="flex justify-between text-gray-600 dark:text-gray-400">
+                            <span>Sous-total</span>
+                            <span class="font-bold text-gray-900 dark:text-white">{{ cart.total_price }} FCFA</span>
+                        </div>
+
+                        <div class="flex justify-between text-gray-600 dark:text-gray-400">
+                            <span>Livraison</span>
+                            <span class="font-bold {% if cart.shipping_cost == 0 %}text-green-500 uppercase text-xs{% else %}text-gray-900 dark:text-white{% endif %}">
+                                {% if cart.shipping_cost == 0 %}
+                                    Gratuite
+                                {% else %}
+                                    {{ cart.shipping_cost }} FCFA
+                                {% endif %}
+                            </span>
+                        </div>
+
+                        <div class="pt-4 border-t border-gray-100 dark:border-gray-700 flex justify-between items-end">
+                            <span class="font-bold text-gray-900 dark:text-white">Total TTC</span>
+                            <span class="text-3xl font-black text-blue-600">{{ cart.total_final }} FCFA</span>
+                        </div>
+                    </div>
+
+                    <a href="{% url 'checkout_view' %}" class="block w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold py-4 px-6 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 btn-hover mb-6">
+                        Procéder au paiement <i class="fas fa-lock ml-2 text-sm"></i>
+                    </a>
+                </div>
+
+                <div class="mt-4 grid grid-cols-2 gap-4">
+                    <div class="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 text-center">
+                        <i class="fas fa-undo-alt text-blue-600 dark:text-blue-400 text-xl mb-2"></i>
+                        <p class="text-sm font-medium text-gray-800 dark:text-white">
+                            {% if product.politique_retour == 'NONE' %}
+                            <p class="text-sm font-medium text-red-600 dark:text-red-400">
+                                 Ce produit n'est ni échangeable, ni remboursable.
+                            </p>
+                        {% else %}
+                            <p class="text-sm font-medium text-gray-800 dark:text-white">
+                                 Retours gratuits sous <span class="text-black">{{ product.get_politique_retour_display }}</span> maximum.
+                            </p>
+                        {% endif %}</p>
+                    </div>
+                    <div class="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 text-center">
+                        <i class="fas fa-headset text-blue-600 dark:text-blue-400 text-xl mb-2"></i>
+                        <p class="text-sm font-medium text-gray-800 dark:text-white">Support client 7j/7</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% else %}
+        <div id="empty-cart" class="text-center py-20 bg-white dark:bg-gray-800 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700">
+            <div class="w-24 h-24 mx-auto bg-blue-50 dark:bg-blue-900/20 rounded-full flex items-center justify-center mb-6">
+                <i class="fas fa-shopping-basket text-blue-600 text-4xl"></i>
+            </div>
+            <h2 class="text-3xl font-bold text-gray-800 dark:text-white mb-4">Votre panier fait grise mine...</h2>
+            <p class="text-gray-500 dark:text-gray-400 mb-10 max-w-sm mx-auto">Il semblerait que vous n'ayez pas encore trouvé votre bonheur.</p>
+            <a href="{% url 'product_list' %}" class="inline-flex items-center justify-center px-10 py-4 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 transition-all shadow-xl shadow-blue-100 dark:shadow-none">
+                Découvrir nos produits
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</main>
+
+{% endblock %}

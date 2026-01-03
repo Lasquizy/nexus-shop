@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block title %}Mes Commandes | NexusShop{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <h1 class="text-3xl font-bold mb-8 text-gray-800 dark:text-white">Mon Historique de Commandes</h1>
+
+    {% if orders %}
+        <div class="space-y-6">
+            {% for order in orders %}
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+                <div class="bg-gray-100 px-6 py-4 flex flex-wrap justify-between items-center gap-4">
+                    <div class="flex gap-8"> <div>
+                            <p class="text-xs text-gray-600 uppercase">Commande n°</p>
+                            <p class="font-bold text-blue-700">#{{ order.reference }}</p> 
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-600 uppercase">Date</p>
+                            <p class="font-medium text-gray-900">{{ order.created_at|date:"d M Y" }}</p> 
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-600 uppercase">Total</p>
+                            <p class="font-bold text-gray-900">{{ order.total_amount }} FCFA</p> 
+                        </div>
+                    </div>
+
+                    <div>
+                        {% if not order.is_paid %}
+                        <a href="{% url 'delete_order' order.id %}" 
+                        onclick="return confirm('Êtes-vous sûr de vouloir supprimer cette commande ?');"
+                        class="text-xs bg-red-50 text-red-600 border border-red-200 px-3 py-2 rounded-lg hover:bg-red-600 hover:text-white transition-all flex items-center gap-1">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                            Supprimer
+                        </a>
+                        {% else %}
+                        <span class="text-[10px] text-gray-400 italic">Non supprimable (Payée)</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="px-6 py-4">
+                    <ul class="divide-y divide-gray-100 dark:divide-gray-700">
+                        {% for item in order.items.all %}
+                        <li class="py-3 flex justify-between items-center border-b border-gray-100">
+                            <div class="flex items-center">
+                                <div class="ml-4">
+                                    <p class="font-semibold text-gray-900">{{ item.product.nom }}</p>
+                                    <p class="text-sm text-gray-500">
+                                        Qté: {{ item.quantity }} 
+                                        {% if item.color %}| Couleur: {{ item.color }}{% endif %}
+                                        {% if item.capacity %}| Capacité: {{ item.capacity }}{% endif %}
+                                        {% if item.size %}| Taille: {{ item.size }}{% endif %}
+                                    </p>
+                                </div>
+                            </div>
+                            <p class="font-bold text-gray-800">{{ item.price }} FCFA</p>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="text-center py-12">
+            <i class="fas fa-box-open text-6xl text-gray-300 mb-4"></i>
+            <p class="text-xl text-gray-500">Vous n'avez pas encore passé de commande.</p>
+            <a href="{% url 'product_list' %}" class="mt-6 inline-block bg-blue-600 text-white px-6 py-3 rounded-full hover:bg-blue-700 transition-colors">
+                Commencer mes achats
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

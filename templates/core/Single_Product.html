@@ -1,0 +1,553 @@
+
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ product.nom }} - Détails du produit{% endblock %}
+
+{% block content %}
+<style>
+    /* Style pour l'onglet actif */
+    .active-tab {
+        border-color: #3b82f6 !important; /* Blue-600 */
+        color: #1d4ed8 !important; /* Blue-700 */
+    }
+    
+    .dark .active-tab {
+        border-color: #60a5fa !important; /* Blue-400 */
+        color: #ffffff !important;
+    }
+
+    /* Animation de transition pour le contenu */
+    .tab-content {
+        animation: fadeIn 0.4s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .rating-star.active {
+        color: #fbbf24; /* Yellow-400 */
+    }
+</style>
+
+    <section class="py-8 md:py-12">
+        <div class="container mx-auto px-4">
+            <div class="mb-6 text-sm text-gray-600 dark:text-gray-400">
+                <a href="{% url 'home' %}" class="hover:text-blue-600 dark:hover:text-blue-400">Accueil</a> /
+                <a href="{% url 'product_list' %}?category={{ product.categorie.slug }}" class="hover:text-blue-600 dark:hover:text-blue-400">{{ product.categorie.nom }}</a> /
+                <span class="text-gray-800 dark:text-gray-300 font-medium">{{ product.nom }}</span>
+            </div>
+
+            <div class="flex flex-col lg:flex-row gap-10">
+                <div class="lg:w-1/2">
+                    <div class="image-zoom-container mb-4">
+                        {% with product.images.all|first as main_image %}
+                        <img id="main-image" src="{% if main_image %}{{ main_image.image.url }}{% else %}https://via.placeholder.com/600x600{% endif %}" 
+                            alt="{{ product.nom }}"
+                            class="image-zoom w-full h-auto rounded-2xl shadow-lg object-cover">
+                        {% endwith %}
+                    </div>
+
+                    <div class="flex space-x-4 overflow-x-auto py-2 custom-scrollbar">
+                        {% for img in product.images.all %}
+                        <div class="thumbnail flex-shrink-0 w-20 h-20 rounded-xl overflow-hidden border-2 {% if forloop.first %}border-orange-500 selected{% else %}border-transparent{% endif %} cursor-pointer transition-all hover:border-orange-500"
+                            onclick="changeMainImage('{{ img.image.url }}', this)">
+                            <img src="{{ img.image.url }}" alt="{{ product.nom }}" class="w-full h-full object-cover">
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="lg:w-1/2">
+                    <form action="{% url 'add_to_cart' product.id %}" method="POST" id="add-to-cart-form">
+                        {% csrf_token %}
+                        
+                        <div class="mb-6">
+                            <h1 class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white">{{ product.nom }}</h1>
+                            <div class="flex items-center space-x-4 mt-2">
+                                <span class="text-orange-500 font-semibold uppercase text-sm tracking-wider">{{ product.marque }}</span>
+                                <span class="px-2 py-0.5 bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 text-xs font-bold rounded uppercase">
+                                    {{ product.get_etat_display }}
+                                </span>
+                                <span class="{% if product.quantite_stocks > 0 %}text-green-500{% else %}text-red-500{% endif %}">
+                                    {% if product.quantite_stocks > 0 %}● En Stock{% else %}○ Rupture{% endif %}
+                                </span>
+                            </div>
+                            <div class="mt-4">
+                                {% if product.prix_promotionnel %}
+                                    <span class="text-4xl font-extrabold text-gray-900 dark:text-white">{{ product.prix_promotionnel }} <small class="text-lg">FCFA</small></span>
+                                    <span class="text-2xl text-gray-500 dark:text-gray-400 line-through ml-4">{{ product.prix }} FCFA</span>
+                                {% else %}
+                                    <span class="text-4xl font-extrabold text-gray-900 dark:text-white">{{ product.prix }} <small class="text-lg">FCFA</small></span>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Description courte -->
+                        <div class="mb-8">
+                            <p class="text-lg text-gray-700 dark:text-gray-300">
+                                {% if product.description_courte %}
+                                    {{ product.description_courte }}
+                                {% else %}
+                                    {{ product.description_longue|truncatewords:30 }}
+                                {% endif %}
+                            </p>
+                        </div>
+
+                        {% if product.colors.all %}
+                        <div class="mb-8">
+                            <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">
+                                Couleur : <span id="selected-color-name" class="text-orange-600 dark:text-orange-400">{{ product.colors.all.0.name }}</span>
+                            </h3>
+                            <input type="hidden" name="color" id="color-input" value="{{ product.colors.all.0.id }}">
+                            <div class="flex space-x-4">
+                                {% for color in product.colors.all %}
+                                <div class="color-option w-10 h-10 rounded-full cursor-pointer border-2 shadow-sm transition-all hover:scale-110 {% if forloop.first %}border-orange-500 scale-110 selected{% else %}border-transparent{% endif %}"
+                                    style="background-color: {{ color.code_hex }};" 
+                                    onclick="updateSelectedColor('{{ color.name }}', this, {{ color.id }})">
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <div class="mb-8">
+                            <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Capacité :</h3>
+                            <input type="hidden" name="capacity" id="capacity-input" value="">
+                            
+                            <div class="flex flex-wrap gap-3">
+                                {% if product.capacities.all %}
+                                    {% for cap in product.capacities.all %}
+                                    <button type="button" 
+                                            class="size-option py-3 px-6 border-2 rounded-xl font-medium transition-all border-gray-300 dark:border-gray-700 hover:border-blue-500" 
+                                            onclick="selectcapacity(this, '{{ cap.id }}')"><span class="text-black">{{ cap.name }}</span></button>
+                                    {% endfor %}
+                                {% else %}
+                                    <p class="text-sm text-gray-500 italic">Aucune variante disponible</p>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        {% if product.sizes.all %}
+                        <div class="mb-8">
+                            <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Taille :</h3>
+                            <input type="hidden" name="size" id="selected-size" value="" required>
+                            
+                            <div class="flex flex-wrap gap-3">
+                                {% for size in product.sizes.all %}
+                                <button type="button" 
+                                        class="size-option py-3 px-6 border-2 rounded-xl font-medium transition-all border-gray-300 dark:border-gray-700 hover:border-blue-500" 
+                                        onclick="selectSize(this, '{{ size.id }}')"> <span class="text-black">{{ size.name }}</span>
+                                </button>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <div class="mb-10">
+                            <div class="flex flex-col sm:flex-row sm:items-center gap-6 mb-8">
+                                <div class="flex items-center">
+                                    <h3 class="text-lg font-bold text-gray-900 dark:text-white mr-6">Quantité :</h3>
+                                    <div class="flex items-center border border-gray-300 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-900">
+                                        <button type="button" onclick="changeQty(-1)" class="w-12 h-12 flex items-center justify-center hover:text-orange-500 text-black"><i class="fas fa-minus"></i></button>
+                                        <input id="quantity" name="quantity" type="number" min="1" max="{{ product.quantite_stocks }}" value="1" readonly
+                                            class="w-14 h-12 text-center text-xl font-bold bg-transparent border-none focus:ring-0 text-black">
+                                        <button type="button" onclick="changeQty(1)" class="w-12 h-12 flex items-center justify-center hover:text-orange-500 text-black"><i class="fas fa-plus"></i></button>
+                                    </div>
+                                </div>
+
+                                {% if product.quantite_stocks > 0 %}
+                                <button type="submit" class="flex-grow bg-gradient-to-r from-orange-500 to-orange-600 text-white font-bold py-4 px-8 rounded-xl shadow-lg hover:scale-[1.02] transition-all flex items-center justify-center">
+                                    <i class="fas fa-shopping-cart mr-3"></i> Ajouter au panier
+                                </button>
+                                {% else %}
+                                <button disabled class="flex-grow bg-gray-400 text-white font-bold py-4 px-8 rounded-xl cursor-not-allowed">Rupture de stock</button>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </form>
+
+                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div class="flex flex-col items-center p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl text-center border border-gray-100 dark:border-gray-700">
+                            <i class="fas fa-truck text-2xl text-orange-600 dark:text-orange-400 mb-2"></i>
+                            <span class="font-bold text-sm text-gray-900 dark:text-white uppercase">Livraison</span>
+                            <span class="text-xs text-gray-600 dark:text-gray-400">
+                                {% if product.livraison_gratuite %}
+                                    Gratuite sur Libreville
+                                {% else %}
+                                    {{ product.frais_livraison_fixe }} FCFA
+                                {% endif %}
+                            </span>
+                        </div>
+
+                        <div class="flex flex-col items-center p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl text-center border border-gray-100 dark:border-gray-700">
+                            <i class="fas fa-shield-alt text-2xl text-blue-600 dark:text-blue-400 mb-2"></i>
+                            <span class="font-bold text-sm text-gray-900 dark:text-white uppercase">Garantie</span>
+                            <span class="text-xs text-gray-600 dark:text-gray-400">
+                                {{ product.get_garantie_produit_display|default:"Garantie standard" }}
+                            </span>
+                        </div>
+
+                        <div class="flex flex-col items-center p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl text-center border border-gray-100 dark:border-gray-700">
+                            <i class="fas fa-undo text-2xl text-purple-600 dark:text-purple-400 mb-2"></i>
+                            <span class="font-bold text-sm text-gray-900 dark:text-white uppercase">Retours</span>
+                            <span class="text-xs text-gray-600 dark:text-gray-400">
+                                {{ product.get_politique_retour_display|default:"7 jours maximum" }}
+                            </span>
+                        </div>
+
+                        <div class="flex flex-col items-center p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl text-center border border-gray-100 dark:border-gray-700">
+                            <i class="fas fa-map-marker-alt text-2xl text-green-600 dark:text-green-400 mb-2"></i>
+                            <span class="font-bold text-sm text-gray-900 dark:text-white uppercase">Zones</span>
+                            <span class="text-xs text-gray-600 dark:text-gray-400 line-clamp-1">
+                                {% for zone in product.zones_livraison.all %}
+                                    {{ zone.nom }}{% if not forloop.last %}, {% endif %}
+                                {% empty %}
+                                    Libreville & Akanda
+                                {% endfor %}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="py-12 bg-gray-50 dark:bg-gray-800/30">
+        <div class="container mx-auto px-4">
+            <div class="flex flex-wrap border-b border-gray-300 dark:border-gray-700 mb-8">
+                <button class="tab-btn text-lg font-medium py-4 px-6 border-b-2 transition-all active-tab" data-tab="description">
+                    Description détaillée
+                </button>
+                <button class="tab-btn text-lg font-medium py-4 px-6 border-b-2 border-transparent transition-all text-gray-500 hover:text-blue-600" data-tab="specs">
+                    Fiche technique
+                </button>
+                <button class="tab-btn text-lg font-medium py-4 px-6 border-b-2 border-transparent transition-all text-gray-500 hover:text-blue-600" data-tab="reviews">
+                    Avis clients ({{ product.reviews.count }})
+                </button>
+            </div>
+            
+            <div id="description" class="tab-content block">
+                <div class="prose max-w-none dark:prose-invert">
+                    <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">Découvrez {{ product.nom }}</h2>
+                    <div class="text-lg text-gray-700 dark:text-gray-300 mb-6">
+                        {{ product.description_longue|linebreaks }}
+                    </div>
+                </div>
+
+                <div class="prose max-w-none dark:prose-invert">
+                    <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">Caractéristiques principales</h2>
+                    <div class="text-lg text-gray-700 dark:text-gray-300 mb-6">
+                        {{ product.caracteristiques|linebreaks }}
+                    </div>
+                </div>
+            </div>
+            
+            <div id="specs" class="tab-content hidden">
+                <div class="overflow-x-auto bg-white dark:bg-gray-800 rounded-2xl shadow-sm">
+                    <div class="prose max-w-none dark:prose-invert">
+                        <div class="text-lg text-gray-700 dark:text-gray-300 mb-6">
+                            {{ product.fiche_technique|linebreaks }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="reviews" class="tab-content hidden">
+                <div class="grid md:grid-cols-3 gap-8 mb-10">
+                    <div class="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-lg text-center border border-gray-100 dark:border-gray-700">
+                        <div class="text-6xl font-black text-blue-600 dark:text-blue-400 mb-2">{{ average_rating|default:"0" }}</div>
+                        <div class="flex justify-center text-yellow-400 mb-4 text-xl">
+                            {% for i in "12345" %}
+                                <i class="{% if forloop.counter <= average_rating %}fas{% else %}far{% endif %} fa-star"></i>
+                            {% endfor %}
+                        </div>
+                        <p class="text-gray-500 dark:text-gray-400 font-medium">Moyenne sur {{ product.reviews.count }} avis</p>
+                    </div>
+                    
+                    </div>
+                
+                <div class="space-y-6">
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Commentaires récents</h3>
+                    {% for review in reviews %}
+                    <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-md border border-gray-50 dark:border-gray-700">
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="flex items-center">
+                                <div class="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg mr-4">
+                                    {{ review.user.username|slice:":1"|upper }}
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-gray-900 dark:text-white">{{ review.user.get_full_name|default:review.user.username }}</h4>
+                                    <p class="text-xs text-gray-500 flex items-center">
+                                        <i class="far fa-calendar-alt mr-1"></i> {{ review.created_at|date:"d F Y" }}
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="text-yellow-400 bg-yellow-50 dark:bg-yellow-900/20 px-3 py-1 rounded-full text-sm font-bold">
+                                {{ review.rating }} <i class="fas fa-star ml-1"></i>
+                            </div>
+                        </div>
+                        <p class="text-gray-700 dark:text-gray-300 leading-relaxed italic">"{{ review.comment }}"</p>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-12 bg-white dark:bg-gray-800 rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-700">
+                        <i class="far fa-comments text-4xl text-gray-300 mb-4 block"></i>
+                        <p class="text-gray-500">Aucun avis pour le moment. Soyez le premier à partager votre expérience !</p>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <div class="mt-12">
+                    {% if user.is_authenticated %}
+                    <div class="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 p-8 rounded-2xl shadow-xl border border-blue-100 dark:border-blue-900/30">
+                        <h3 class="text-2xl font-bold mb-6 text-gray-900 dark:text-white flex items-center">
+                            <i class="fas fa-pen-nib mr-3 text-blue-600"></i> Partagez votre avis
+                        </h3>
+                        
+                        <form method="post" action="." class="space-y-6">
+                            {% csrf_token %}
+                            
+                            {% if review_form.errors %}
+                            <div class="p-4 bg-red-50 text-red-700 rounded-xl text-sm">
+                                Veuillez corriger les erreurs ci-dessous.
+                            </div>
+                            {% endif %}
+
+                            <div class="grid md:grid-cols-4 gap-6">
+                                <div class="md:col-span-1">
+                                    <label class="block mb-2 font-semibold text-gray-700 dark:text-gray-300">Votre note</label>
+                                    {{ review_form.rating }}
+                                </div>
+                                <div class="md:col-span-3">
+                                    <label class="block mb-2 font-semibold text-gray-700 dark:text-gray-300">Votre message</label>
+                                    {{ review_form.comment }}
+                                </div>
+                            </div>
+                            
+                            <div class="flex justify-end">
+                                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-10 rounded-xl transition-all shadow-lg hover:shadow-blue-500/25 flex items-center">
+                                    Envoyer mon avis <i class="fas fa-paper-plane ml-3"></i>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                    {% else %}
+                    <div class="mt-12 text-center p-10 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-2xl bg-white/50 dark:bg-gray-800/50">
+                        <p class="text-gray-600 dark:text-gray-400 mb-6 text-lg">Vous souhaitez donner votre avis ?</p>
+                        <a href="{% url 'login' %}" class="inline-flex items-center justify-center px-8 py-3 font-bold text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-all shadow-lg">
+                            <i class="fas fa-sign-in-alt mr-2"></i> Connectez-vous maintenant
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </section>
+
+        <section class="py-12 bg-white dark:bg-gray-900">
+        <div class="container mx-auto px-4">
+            <h2 class="text-3xl font-bold text-center text-gray-900 dark:text-white mb-2">Produits Similaires</h2>
+            <p class="text-gray-600 dark:text-gray-300 text-center mb-10">D'autres produits dans la catégorie {{ product.categorie.name }} qui pourraient vous intéresser</p>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                {% for similar in similar_products %}
+                <div class="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-200 dark:border-gray-700 group">
+                    <div class="relative overflow-hidden">
+                        {% if similar.image %}
+                            <img src="{{ similar.image.url }}" 
+                                alt="{{ similar.name }}" 
+                                class="w-full h-64 object-cover transform group-hover:scale-110 transition-transform duration-500">
+                        {% else %}
+                            <div class="w-full h-64 bg-gray-200 flex items-center justify-center">
+                                <i class="fas fa-image text-4xl text-gray-400"></i>
+                            </div>
+                        {% endif %}
+
+                        {% if similar.old_price %}
+                        <div class="absolute top-4 left-4">
+                            <span class="bg-red-500 text-white text-xs font-bold py-1 px-3 rounded-full">PROMO</span>
+                        </div>
+                        {% endif %}
+
+                        <div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                            <div class="flex space-x-3">
+                                <a href="{% url 'add_to_cart' similar.id %}" class="p-3 bg-white rounded-full text-blue-600 hover:bg-blue-600 hover:text-white transition-colors shadow-lg" title="Ajouter au panier">
+                                    <i class="fas fa-shopping-cart"></i>
+                                </a>
+                                <a href="{{ similar.get_absolute_url }}" class="p-3 bg-white rounded-full text-gray-800 hover:bg-gray-100 transition-colors shadow-lg" title="Voir le produit">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="p-6">
+                        <p class="text-xs font-semibold text-blue-600 uppercase mb-1">{{ similar.categorie.name }}</p>
+                        <a href="{{ similar.get_absolute_url }}">
+                            <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-2 truncate hover:text-blue-600 transition-colors">
+                                {{ similar.name }}
+                            </h3>
+                        </a>
+                        
+                        <p class="text-gray-600 dark:text-gray-400 text-sm mb-4 line-clamp-2">
+                            {{ similar.description|truncatewords:10 }}
+                        </p>
+                        
+                        <div class="flex items-center justify-between mt-auto">
+                            <div>
+                                <span class="text-xl font-bold text-gray-900 dark:text-white">{{ similar.price }}€</span>
+                                {% if similar.old_price %}
+                                    <span class="text-sm text-gray-500 line-through ml-2">{{ similar.old_price }}€</span>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="flex items-center text-yellow-400 text-xs">
+                                <i class="fas fa-star"></i>
+                                <span class="ml-1 text-gray-600 dark:text-gray-400 font-medium">
+                                    {{ similar.average_rating|default:"5.0" }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="col-span-full text-center py-10 text-gray-500 italic">
+                    Aucun produit similaire trouvé.
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // === 1. GESTION DES ONGLETS (Tabs) ===
+            const tabs = document.querySelectorAll('.tab-btn');
+            const contents = document.querySelectorAll('.tab-content');
+
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const target = tab.dataset.tab;
+
+                    // Mise à jour visuelle des boutons
+                    tabs.forEach(btn => {
+                        btn.classList.remove('active-tab', 'border-blue-600', 'text-blue-600');
+                        btn.classList.add('border-transparent', 'text-gray-500');
+                    });
+                    tab.classList.add('active-tab', 'border-blue-600', 'text-blue-600');
+                    tab.classList.remove('border-transparent', 'text-gray-500');
+
+                    // Affichage du contenu correspondant
+                    contents.forEach(content => {
+                        content.classList.toggle('hidden', content.id !== target);
+                        content.classList.toggle('block', content.id === target);
+                    });
+                });
+            });
+
+            // === 2. GESTION DE L'AJOUT AU PANIER (AJAX) ===
+            const cartForm = document.getElementById('add-to-cart-form');
+            if (cartForm) {
+                cartForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
+                    const formData = new FormData(this);
+                    
+                    fetch(this.action, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            // Mise à jour du compteur dans la navbar (si l'ID existe)
+                            const cartBadge = document.getElementById('cart-count-badge');
+                            if (cartBadge) cartBadge.innerText = data.cart_count;
+                            
+                            alert("Produit ajouté au panier !");
+                        } else {
+                            alert("Erreur : " + (data.message || "Impossible d'ajouter le produit."));
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Erreur:', error);
+                        alert("Une erreur est survenue lors de l'ajout au panier.");
+                    });
+                });
+            }
+        });
+
+        // === 3. FONCTIONS GLOBALES (Variantes et Images) ===
+
+        function updateSelectedColor(name, element, id) {
+            document.getElementById('selected-color-name').innerText = name;
+            document.getElementById('color-input').value = id;
+            
+            document.querySelectorAll('.color-option').forEach(el => 
+                el.classList.remove('border-orange-500', 'scale-110')
+            );
+            element.classList.add('border-orange-500', 'scale-110');
+        }
+
+        // Nouvelle fonction pour la Taille ou Capacité
+        function selectcapacity(element, value) {
+            // Met à jour l'input caché (utilisez 'size-input' ou 'capacity-input' selon votre HTML)
+            const input = document.getElementById('size-input') || document.getElementById('capacity-input');
+            if (input) input.value = value;
+            
+            document.querySelectorAll('.size-option').forEach(el => {
+                el.classList.remove('border-blue-600', 'bg-blue-50', 'text-blue-600');
+                el.classList.add('border-gray-300');
+            });
+            element.classList.add('border-blue-600', 'bg-blue-50', 'text-blue-600');
+        }
+
+        function changeQty(delta) {
+            const input = document.getElementById('quantity');
+            const maxStock = parseInt(input.getAttribute('max'));
+            let newVal = parseInt(input.value) + delta;
+            
+            if (newVal >= 1 && newVal <= maxStock) {
+                input.value = newVal;
+            }
+        }
+
+        function changeMainImage(url, element) {
+            const mainImg = document.getElementById('main-image');
+            if (mainImg) mainImg.src = url;
+            
+            document.querySelectorAll('.thumbnail').forEach(el => 
+                el.classList.remove('border-orange-500')
+            );
+            element.classList.add('border-orange-500');
+        }
+    </script>
+
+    <script>
+        function selectSize(element, sizeId) {
+            // 1. Récupérer tous les boutons de taille
+            const options = document.querySelectorAll('.size-option');
+            
+            // 2. Réinitialiser le style de tous les boutons
+            options.forEach(opt => {
+                opt.classList.remove('border-blue-500', 'bg-blue-50', 'dark:bg-blue-900/20');
+                opt.classList.add('border-gray-300', 'dark:border-gray-700');
+            });
+
+            // 3. Appliquer le style "actif" au bouton cliqué
+            element.classList.remove('border-gray-300', 'dark:border-gray-700');
+            element.classList.add('border-blue-500', 'bg-blue-50', 'dark:bg-blue-900/20');
+
+            // 4. Mettre à jour la valeur du champ caché pour le formulaire Django
+            document.getElementById('selected-size').value = sizeId;
+            
+            console.log("Taille sélectionnée ID:", sizeId); // Pour vérifier dans la console
+        }
+    </script>
+{% endblock %}
